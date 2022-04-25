@@ -13,7 +13,9 @@ def conv1D(in_signal: np.ndarray, k_size: np.ndarray) -> np.ndarray:
     :param k_size: 1-D array as a kernel
     :return: The convolved array
     """
+    # flip image
     flipped = np.array([np.flip(in_signal)])
+    # create answer array
     answer = np.array([])
     # add zeros at the beginning and end of vector
     for i in range(k_size.size-1):
@@ -37,13 +39,15 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     :param kernel: A kernel
     :return: The convolved image
     """
-
-    flipped = np.array(np.flip(kernel))
+    # flip image
+    flipped = np.flip(kernel)
+    # create answer array
     answer = np.zeros((in_image.shape[0],in_image.shape[1]))
+
     # add padding to image
     height = (flipped.shape[0]-1)//2
     width = (flipped.shape[1]-1)//2
-    padded = np.pad(in_image,(width,height),'edge')
+    padded = np.pad(in_image,((height,height),(width,width)),'edge')
 
     # for every row
     for i in range(in_image.shape[0]):
@@ -61,23 +65,15 @@ def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
     :param in_image: Grayscale iamge
     :return: (directions, magnitude)
     """
-    # upload image
-    # Loads an image
-    # src = cv.imread(img)
-    # # Check if image is loaded fine
-    # if src is None:
-    #     print('Error opening image!')
-    #     return -1
-
-    a = [1, 0,-1]
-    b = np.transpose(a)
+    a = np.array([[1, 0,-1]])
+    b = np.transpose([a])
     deriv = conv2D(in_image, a)
     derivT = conv2D(in_image, b)
 
-    mag = np.sqrt(np.power(np.linalg.matrix_power(deriv,2))+np.power(np.linalg.matrix_power(derivT,2)))
-    dir = np.arctan(derivT/deriv)
+    dir = np.sqrt(np.power(deriv, 2) + np.power(derivT, 2))
+    mag = np.arctan2(derivT,deriv)
 
-    return dir, mag
+    return (dir, mag)
 
 
 def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:

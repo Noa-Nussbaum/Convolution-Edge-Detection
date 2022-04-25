@@ -1,4 +1,6 @@
 import math
+
+import cv as cv
 import numpy as np
 import cv2
 
@@ -11,21 +13,20 @@ def conv1D(in_signal: np.ndarray, k_size: np.ndarray) -> np.ndarray:
     :param k_size: 1-D array as a kernel
     :return: The convolved array
     """
-    flipped = np.flip(in_signal)
-    answer = []
+    flipped = np.array([np.flip(in_signal)])
+    answer = np.array([])
     # add zeros at the beginning and end of vector
-    for i in range(k_size.size):
-        flipped.append(0)
-        flipped.insert(flipped.size, 0)
+    for i in range(k_size.size-1):
+        flipped = np.insert(flipped,0,0)
+        flipped = np.append(flipped,[0])
     # multiply and sum vector and kernel
     # for every value in the vector
     for i in range(flipped.size-1):
         n = 0
-    # for every value in the
-        for j in range(k_size.size-1):
+    # for every value in the kernel
+        for j in range(k_size.size):
             n += k_size[j]*flipped[j+i]
-        answer.append(n)
-
+        answer = np.append(answer,[n])
     return answer
 
 
@@ -37,19 +38,18 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     :return: The convolved image
     """
 
-    flipped = np.flip(kernel)
-    answer = []
+    flipped = np.array(np.flip(kernel))
+    answer = np.zeros((in_image.shape[0],in_image.shape[1]))
     # add padding to image
     height = (flipped.shape[0]-1)//2
     width = (flipped.shape[1]-1)//2
-    padded = np.pad(in_image,(width,width,height,height),'edge')
+    padded = np.pad(in_image,(width,height),'edge')
 
-    # multiply parallel places and put in (x,y)
-    new = (padded[2:5,5:6]*flipped).sum()
     # for every row
-    for i in range(in_image.shape[0])-1:
+    for i in range(in_image.shape[0]):
     # for every column
-        for j in range(in_image.shape[1])-1:
+        for j in range(in_image.shape[1]):
+    # multiply parallel places and put in (x,y)
             answer[i][j] = (padded[i:i+flipped.shape[0],j:j+flipped.shape[1]]*flipped).sum()
 
     return answer
@@ -61,6 +61,14 @@ def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
     :param in_image: Grayscale iamge
     :return: (directions, magnitude)
     """
+    # upload image
+    # Loads an image
+    # src = cv.imread(img)
+    # # Check if image is loaded fine
+    # if src is None:
+    #     print('Error opening image!')
+    #     return -1
+
     a = [1, 0,-1]
     b = np.transpose(a)
     deriv = conv2D(in_image, a)
@@ -124,8 +132,32 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
     """
+    # upload image
+    # Loads an image
+    src = cv.imread(img)
+    # Check if image is loaded fine
+    if src is None:
+        print('Error opening image!')
+        return -1
 
-    return
+    # detect edges
+    detect = cv.Canny(img,min_radius, max_radius)
+    lines = cv.HoughLines(detect, 1, np.pi / 180, 150, None, 0, 0)
+    cdst = cv.cvtColor(detect, cv.COLOR_GRAY2BGR)
+
+    if lines is not None:
+        for i in range(0, len(lines)):
+            rho = lines[i][0][0]
+            theta = lines[i][0][1]
+            a = math.cos(theta)
+            b = math.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+            pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+            cv.line(cdst, pt1, pt2, (0, 0, 255), 3, cv.LINE_AA)
+
+    return cdst
 
 
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (

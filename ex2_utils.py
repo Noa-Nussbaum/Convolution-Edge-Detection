@@ -83,8 +83,18 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :param k_size: Kernel size
     :return: The Blurred image
     """
+    # Sigma of kernel i,j = 1.0
+    sigma = 1.0
+    center = k_size // 2
+    kernel = np.zeros((k_size, k_size))
+    for i in range(k_size):
+        for j in range(k_size):
+            ker_diff = np.sqrt(np.power(i - center, 2) + np.power(j - center, 2))
+            kernel[i, j] = np.exp(-(np.power(ker_diff, 2)) / (2 * np.power(center, 2)))
 
-    return
+    gaussian_kernel = kernel / sigma
+    blur = conv2D(in_image, gaussian_kernel)
+    return blur
 
 
 def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
@@ -95,8 +105,28 @@ def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :return: The Blurred image
     """
 
-    return
+    # Creating a Gaussian kernel using the OpenCV library
+    gaussian_kernel = cv2.getGaussianKernel(k_size, -1)
+    # Applying the Gaussian kernel to the image
+    blurred_img = cv2.sepFilter2D(in_image, -1, gaussian_kernel, gaussian_kernel)
+    return blurred_img
 
+# is this an edge - sends relevant pairs to check()
+def check_area(list):
+    answer = False
+    for i in range(4):
+        try:
+           if check(list[i],list[8-i]):
+               return True
+        except:
+            pass
+    return answer
+
+# checks if one value is positive and one is negative
+def check(a, b):
+    if (a>0 and b>0) or (a<0 and b<0) or (a==0 and b==0):
+        return False
+    return True
 
 def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
     """
@@ -105,8 +135,28 @@ def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
     :return: opencv solution, my implementation
     """
 
-    return
+    # create answer array
+    answer = np.zeros(img.shape)
 
+    # run gaussian blurring on image
+    gaussian = cv2.GaussianBlur(img, (11, 11), 0)
+
+    # find derivative
+    laplacian = np.array([[0, 1, 0],
+                          [1, -4, 1],
+                          [0, 1, 0]])
+    img_f = conv2D(gaussian,laplacian)
+
+    # zero crossing
+    for i in range(img_f.shape[0]-1):
+        for j in range(img_f.shape[1]-1):
+            pixels = [img_f[i - 1][j - 1], img_f[i - 1][j], img_f[i - 1][j + 1],
+                      img_f[i][j-1], img_f[i][j], img_f[i][j+1],
+                      img_f[i+1][j-1], img_f[i+1][j], img_f[i+1][j+1]]
+            if check_area(pixels):
+                answer[i][j]=1
+
+    return answer
 
 def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     """
@@ -114,7 +164,6 @@ def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     :param img: Input image
     :return: opencv solution, my implementation
     """
-
     return
 
 
@@ -128,18 +177,11 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
     """
-    # upload image
-    # Loads an image
-    src = cv.imread(img)
-    # Check if image is loaded fine
-    if src is None:
-        print('Error opening image!')
-        return -1
 
     # detect edges
-    detect = cv.Canny(img,min_radius, max_radius)
-    lines = cv.HoughLines(detect, 1, np.pi / 180, 150, None, 0, 0)
-    cdst = cv.cvtColor(detect, cv.COLOR_GRAY2BGR)
+    detect = cv2.Canny(np.uint8(img),min_radius, max_radius)
+    lines = cv2.HoughLines(detect, 1, np.pi / 180, 150, None, 0, 0)
+    cdst = cv2.cvtColor(detect, cv2.COLOR_GRAY2BGR)
 
     if lines is not None:
         for i in range(0, len(lines)):
@@ -167,3 +209,10 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     """
 
     return
+
+def myID() -> np.int:
+    """
+    Return my ID (not the friend's ID I copied from)
+    :return: int
+    """
+    return 206664278

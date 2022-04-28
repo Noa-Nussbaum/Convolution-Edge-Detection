@@ -7,6 +7,8 @@ Our second Image processing project
 
 Python version: 3.8
 
+Here are the results my functions gave
+
 ### Hough Circles:
 ![myplot](https://user-images.githubusercontent.com/76524924/165690128-e7a53a71-8848-4de3-8b75-92023da1c54c.png)
  ### Blurring:

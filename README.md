@@ -1,3 +1,3 @@
 # Convolution-Edge-Detection
 
-![image](https://user-images.githubusercontent.com/76524924/165689839-3a1949ad-ac4b-4f0f-8402-80267f09221a.png)
+![myplot](https://user-images.githubusercontent.com/76524924/165690128-e7a53a71-8848-4de3-8b75-92023da1c54c.png)

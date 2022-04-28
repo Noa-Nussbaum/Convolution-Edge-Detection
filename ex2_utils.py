@@ -111,14 +111,15 @@ def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
     blurred_img = cv2.sepFilter2D(in_image, -1, gaussian_kernel, gaussian_kernel)
     return blurred_img
 
-# is this an edge - sends relevant pairs to check()
+
+# is this an edge? - sends relevant pairs to check()
 def check_area(list):
     answer = False
-    for i in range(4):
+    for i in range(3):
         try:
-           if check(list[i],list[8-i]):
+           if check(list[i],list[3-i]):
                return True
-           if list[4]<0 and list[i]>0:
+           elif list[3]<0 and list[i]>0:
                return True
         except:
             pass
@@ -151,13 +152,12 @@ def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
     img_f = conv2D(gaussian,laplacian)
 
     # zero crossing
-    for i in range(img_f.shape[0]-1):
-        for j in range(img_f.shape[1]-1):
-            pixels = [img_f[i - 1][j - 1], img_f[i - 1][j], img_f[i - 1][j + 1],
-                      img_f[i][j-1], img_f[i][j], img_f[i][j+1],
-                      img_f[i+1][j-1], img_f[i+1][j], img_f[i+1][j+1]]
+    for i in range(img_f.shape[0] - 1):
+        for j in range(img_f.shape[1] - 1):
+            pixels = [img_f[i - 1][j], img_f[i + 1][j],
+                      img_f[i][j - 1], img_f[i][j+1]]
             if check_area(pixels):
-                answer[i][j]=1
+                answer[i, j] = img[i, j] + np.abs(min(pixels))
 
     return answer
 
@@ -168,7 +168,6 @@ def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     :return: opencv solution, my implementation
     """
     return
-
 
 def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     """
@@ -212,7 +211,6 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
 
     return circles
 
-
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (
         np.ndarray, np.ndarray):
     """
@@ -222,8 +220,29 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     :param sigma_space: represents the filter sigma in the coordinate.
     :return: OpenCV implementation, my implementation
     """
+    in_image = cv2.normalize(in_image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
-    return
+    # add padding to image
+    padded = np.pad(in_image.astype(np.float32), ((k_size, k_size), (k_size, k_size)), 'edge')
+
+    # create answer array
+    answer = np.zeros(in_image.shape)
+
+    for i in range(in_image.shape[0]):
+        for j in range(in_image.shape[1]):
+            y, x = i,j
+            pivot_v = in_image[y, x]
+            neighbor_hood = padded[i: i + 2 * k_size + 1, j: j + 2 * k_size + 1]
+            diff = pivot_v - neighbor_hood
+            diff_gau = np.exp(-np.power(diff, 2) / (2 * sigma_space))
+            gaus = cv2.getGaussianKernel(2 * k_size + 1, k_size)
+            gaus = gaus.dot(gaus.T)
+            combo = gaus * diff_gau
+            result = np.dot(combo, neighbor_hood) / combo.sum()
+            answer[y,x] = result.sum()
+    opencv = cv2.bilateralFilter(in_image,k_size,sigma_color,sigma_space)
+    print(opencv.shape, result.shape)
+    return opencv, answer
 
 def myID() -> np.int:
     """

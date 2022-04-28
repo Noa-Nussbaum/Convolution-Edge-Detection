@@ -120,7 +120,7 @@ def houghDemo():
 
     # # TEST WITH YOUR IMPLEMENT ONLY
     # img = cv2.imread('input/pool_balls.jpg', cv2.IMREAD_GRAYSCALE) / 255
-    # min_r, max_r = 10, 20
+    # min_r, max_r = 5, 10
 
     # Mine
     st = time.time()

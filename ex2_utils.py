@@ -118,8 +118,11 @@ def check_area(list):
         try:
            if check(list[i],list[8-i]):
                return True
+           if list[4]<0 and list[i]>0:
+               return True
         except:
             pass
+
     return answer
 
 # checks if one value is positive and one is negative
@@ -139,7 +142,7 @@ def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
     answer = np.zeros(img.shape)
 
     # run gaussian blurring on image
-    gaussian = cv2.GaussianBlur(img, (11, 11), 0)
+    gaussian = cv2.GaussianBlur(img, (11,11), 0)
 
     # find derivative
     laplacian = np.array([[0, 1, 0],
@@ -177,25 +180,37 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
     """
+    circles = list()
+    thresh = 0.7
+    sobel_x = cv2.Sobel(img, cv2.CV_64F, 0, 1, thresh)
+    sobel_y = cv2.Sobel(img, cv2.CV_64F, 1, 0, thresh)
+    direction = np.radians(np.arctan2(sobel_x, sobel_y) * 180 / np.pi)
+    accumulator = np.zeros((len(img), len(img[0]), max_radius + 1))
+    edges = cv2.Canny(np.uint8(img), 0.1, 0.45)
+    height = len(edges)
+    width = len(edges[0])
+    for x in range(0, height):
+        for y in range(0, width):
+            if edges[x][y] == 255:
+                for radius in range(min_radius, max_radius + 1):
+                    angle = direction[x, y] - np.pi / 2
+                    # x1, y1 => value + radius
+                    # x2, y2 => value - radius
+                    x1, x2 = np.int32(x - radius * np.cos(angle)), np.int32(x + radius * np.cos(angle))
+                    y1, y2 = np.int32(y + radius * np.sin(angle)), np.int32(y - radius * np.sin(angle))
+                    if 0 < x1 < len(accumulator) and 0 < y1 < len(accumulator[0]):
+                        accumulator[x1, y1, radius] += 1
+                    if 0 < x2 < len(accumulator) and 0 < y2 < len(accumulator[0]):
+                        accumulator[x2, y2, radius] += 1
 
-    # detect edges
-    detect = cv2.Canny(np.uint8(img),min_radius, max_radius)
-    lines = cv2.HoughLines(detect, 1, np.pi / 180, 150, None, 0, 0)
-    cdst = cv2.cvtColor(detect, cv2.COLOR_GRAY2BGR)
+    thresh = np.multiply(np.max(accumulator), 1 / 2)
+    x, y, radius = np.where(accumulator >= thresh)
+    for i in range(len(x)):
+        if x[i] == 0 and y[i] == 0 and radius[i] == 0:
+            continue
+        circles.append((y[i], x[i], radius[i]))
 
-    if lines is not None:
-        for i in range(0, len(lines)):
-            rho = lines[i][0][0]
-            theta = lines[i][0][1]
-            a = math.cos(theta)
-            b = math.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-            pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-            cv.line(cdst, pt1, pt2, (0, 0, 255), 3, cv.LINE_AA)
-
-    return cdst
+    return circles
 
 
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (

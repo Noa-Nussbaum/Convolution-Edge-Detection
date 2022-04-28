@@ -220,7 +220,7 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     :param sigma_space: represents the filter sigma in the coordinate.
     :return: OpenCV implementation, my implementation
     """
-    in_image = cv2.normalize(in_image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    in_image = cv2.normalize(in_image, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     # add padding to image
     padded = np.pad(in_image.astype(np.float32), ((k_size, k_size), (k_size, k_size)), 'edge')
@@ -236,12 +236,13 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
             diff = pivot_v - neighbor_hood
             diff_gau = np.exp(-np.power(diff, 2) / (2 * sigma_space))
             gaus = cv2.getGaussianKernel(2 * k_size + 1, k_size)
-            gaus = gaus.dot(gaus.T)
-            combo = gaus * diff_gau
-            result = np.dot(combo, neighbor_hood) / combo.sum()
+            gaus = gaus*gaus.T
+            combo = gaus*diff_gau
+            result = (combo * neighbor_hood).sum() / combo.sum()
             answer[y,x] = result.sum()
+
     opencv = cv2.bilateralFilter(in_image,k_size,sigma_color,sigma_space)
-    print(opencv.shape, result.shape)
+
     return opencv, answer
 
 def myID() -> np.int:
